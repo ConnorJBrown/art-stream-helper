@@ -1,0 +1,39 @@
+﻿<Window
+    x:Class="ArtStreamHelper.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ArtStreamHelper.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <StackPanel x:Name="MainPage"
+                Spacing="16"
+                d:DataContext="{d:DesignInstance local:MainWindow}"
+                Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel.Resources>
+            <Style x:Key="MyOutlinedTextBlockStyle" TargetType="local:OutlinedTextBlock">
+                <Setter Property="FontFamily" Value="Cooper" />
+                <Setter Property="FontSize" Value="36" />
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="OutlineColor" Value="Black" />
+                <Setter Property="OutlineThickness" Value="7" />
+            </Style>
+            <Style TargetType="local:OutlinedTextBlock" BasedOn="{StaticResource MyOutlinedTextBlockStyle}"/>
+        </StackPanel.Resources>
+        <StackPanel Orientation="Horizontal" Spacing="16" Padding="32,32,32,0">
+            <Button Click="OnToggleClicked">
+                <TextBlock x:Name="ToggleButtonText" Text="Start" />
+            </Button>
+            <Button Click="OnCycleClicked">
+                <TextBlock Text="Cycle Prompt" />
+            </Button>
+            <Button Click="PickPromptFile">
+                <TextBlock Text="Pick Prompt File" />
+            </Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="32" Background="LimeGreen" Padding="32,16">
+            <local:OutlinedTextBlock x:Name="PromptText" Text="" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
+            <local:OutlinedTextBlock x:Name="TimeText" Text="" />
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ArtStreamHelper.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ArtStreamHelper.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
