@@ -1,11 +1,8 @@
-﻿using Microsoft.UI.Xaml;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ArtStreamHelper.Core.ViewModels;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.UI.Xaml;
+using System.ComponentModel;
 using Windows.Foundation;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,68 +14,33 @@ namespace ArtStreamHelper.WinUI;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
-    private static readonly TimeSpan PromptCooldown = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan PromptTime = TimeSpan.FromMinutes(30);
-
-    private readonly DispatcherTimer _promptCooldownTimer;
-    private readonly DispatcherTimer _promptDrawingTimer;
-    private readonly Random _random;
-
-    private string _lastPrompt;
-    private List<string> _promptList;
-    private int _drawingSecondsRemaining;
-    private int _cooldownSecondsRemaining;
-    private bool _started;
-
     public MainWindow()
     {
         InitializeComponent();
-
-        _promptCooldownTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _promptCooldownTimer.Tick += (sender, o) =>
-        {
-            _cooldownSecondsRemaining--;
-
-            if (_cooldownSecondsRemaining == 0)
-            {
-                _promptCooldownTimer.Stop();
-                _promptDrawingTimer.Start();
-            }
-        };
-
-        _promptDrawingTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
-        _promptDrawingTimer.Tick += (sender, args) =>
-        {
-            SetSecondsRemaining(_drawingSecondsRemaining - 1);
-            if (_drawingSecondsRemaining == 0)
-            {
-                _promptDrawingTimer.Stop();
-                CyclePrompt();
-                StartCooldownTimer();
-            }
-        };
-
-        _promptList = new List<string>
-        {
-            "Animal", "Clothing Item", "Color", "Adjective", "Object"
-        };
-        _random = new Random();
-
-        UpdatePromptMaxWidth();
-
-        MainPage.DataContext = this;
+        MainPage.DataContext = Ioc.Default.GetRequiredService<MainViewModel>();
+        ViewModel.PropertyChanged += ViewModelOnPropertyChanged;
     }
+
+    private void ViewModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(MainViewModel.PromptText):
+                UpdatePromptMaxWidth();
+                TextBlockPrompt.InvalidateMeasure();
+                break;
+            case nameof(MainViewModel.TimeText):
+                TextBlockTime.InvalidateMeasure();
+                break;
+        }
+    }
+
+    private MainViewModel ViewModel => (MainViewModel)MainPage.DataContext;
 
     private void UpdatePromptMaxWidth()
     {
         double maxWidth = GetMaxTextWidth();
-        PromptText.Width = maxWidth;
+        TextBlockPrompt.Width = maxWidth;
     }
 
     private double GetMaxTextWidth()
@@ -87,9 +49,9 @@ public sealed partial class MainWindow : Window
 
         if (MainPage.Resources.TryGetValue("MyOutlinedTextBlockStyle", out object value) && value is Style style)
         {
-            foreach (var prompt in _promptList)
+            foreach (var prompt in ViewModel.PromptList)
             {
-                OutlinedTextBlock text = new OutlinedTextBlock()
+                OutlinedTextBlock text = new OutlinedTextBlock
                 {
                     Style = style,
                     Text = $"Prompt: {prompt}"
@@ -104,91 +66,5 @@ public sealed partial class MainWindow : Window
         }
 
         return maxWidth;
-    }
-
-    private void OnToggleClicked(object sender, RoutedEventArgs e)
-    {
-        Toggle();
-    }
-
-    private void Toggle()
-    {
-        _started = !_started;
-        ToggleButtonText.Text = _started ? "Stop" : "Start";
-
-        if (_started)
-        {
-            CyclePrompt();
-            StartCooldownTimer();
-        }
-        else
-        {
-            PromptText.Text = " ";
-            TimeText.Text = " ";
-            _promptDrawingTimer.Stop();
-            _promptCooldownTimer.Stop();
-        }
-    }
-
-    private void OnCycleClicked(object sender, RoutedEventArgs e)
-    {
-        _promptDrawingTimer.Stop();
-        _promptCooldownTimer.Stop();
-
-        CyclePrompt();
-        StartCooldownTimer();
-    }
-
-    private void StartCooldownTimer()
-    {
-        _cooldownSecondsRemaining = (int)PromptCooldown.TotalSeconds;
-        SetSecondsRemaining((int)PromptTime.TotalSeconds);
-        _promptCooldownTimer.Start();
-    }
-
-    private void CyclePrompt()
-    {
-        List<string> availablePrompts = _promptList.Where(prompt => prompt != _lastPrompt).ToList();
-        _lastPrompt = availablePrompts[_random.Next(availablePrompts.Count)];
-        PromptText.Text = $"Prompt: {_lastPrompt}";
-        PromptText.InvalidateMeasure();
-
-        SetSecondsRemaining((int)PromptTime.TotalSeconds);
-    }
-
-    private void SetSecondsRemaining(int totalSeconds)
-    {
-        _drawingSecondsRemaining = totalSeconds;
-        int minutes = _drawingSecondsRemaining / 60;
-        int seconds = _drawingSecondsRemaining % 60;
-        TimeText.Text = $"Time: {minutes}:{seconds:00}";
-        TimeText.InvalidateMeasure();
-    }
-
-    private async void PickPromptFile(object sender, RoutedEventArgs e)
-    {
-        if (_started)
-        {
-            Toggle();
-        }
-
-        var picker = new FileOpenPicker();
-        picker.ViewMode = PickerViewMode.List;
-        picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-        picker.FileTypeFilter.Add(".txt");
-
-        // Get the current window's HWND by passing in the Window object
-        var hwnd = WindowNative.GetWindowHandle(this);
-
-        // Associate the HWND with the file picker
-        InitializeWithWindow.Initialize(picker, hwnd);
-
-        StorageFile file = await picker.PickSingleFileAsync();
-        if (file != null)
-        {
-            string text = await FileIO.ReadTextAsync(file);
-            _promptList = text.Split(Environment.NewLine).ToList();
-            UpdatePromptMaxWidth();
-        }
     }
 }

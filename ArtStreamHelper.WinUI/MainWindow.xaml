@@ -5,10 +5,11 @@
     xmlns:local="using:ArtStreamHelper.WinUI"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="using:ArtStreamHelper.Core.ViewModels"
     mc:Ignorable="d">
     <StackPanel x:Name="MainPage"
                 Spacing="16"
-                d:DataContext="{d:DesignInstance local:MainWindow}"
+                d:DataContext="{d:DesignInstance viewModels:MainViewModel}"
                 Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <StackPanel.Resources>
             <Style x:Key="MyOutlinedTextBlockStyle" TargetType="local:OutlinedTextBlock">
@@ -20,20 +21,20 @@
             </Style>
             <Style TargetType="local:OutlinedTextBlock" BasedOn="{StaticResource MyOutlinedTextBlockStyle}"/>
         </StackPanel.Resources>
-        <StackPanel Orientation="Horizontal" Spacing="16" Padding="32,32,32,0">
-            <Button Click="OnToggleClicked">
-                <TextBlock x:Name="ToggleButtonText" Text="Start" />
+        <StackPanel  Orientation="Horizontal" Spacing="16" Padding="32,32,32,0">
+            <Button Command="{Binding ToggleCommand}" >
+                <TextBlock Text="{Binding ToggleButtonText}" />
             </Button>
-            <Button Click="OnCycleClicked">
+            <Button Command="{Binding CycleClickedCommand}">
                 <TextBlock Text="Cycle Prompt" />
             </Button>
-            <Button Click="PickPromptFile">
+            <Button Command="{Binding PickPromptFileCommand}">
                 <TextBlock Text="Pick Prompt File" />
             </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="32" Background="LimeGreen" Padding="32,16">
-            <local:OutlinedTextBlock x:Name="PromptText" Text="" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
-            <local:OutlinedTextBlock x:Name="TimeText" Text="" />
+            <local:OutlinedTextBlock x:Name="TextBlockPrompt" Text="{Binding PromptText}" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
+            <local:OutlinedTextBlock x:Name="TextBlockTime" Text="{Binding TimeText}" />
         </StackPanel>
     </StackPanel>
 </Window>
