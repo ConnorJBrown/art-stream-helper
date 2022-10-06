@@ -1,17 +1,21 @@
 ﻿<Window
     x:Class="ArtStreamHelper.WinUI.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:ArtStreamHelper.WinUI"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="using:ArtStreamHelper.Core.ViewModels"
+    xmlns:local="using:ArtStreamHelper.WinUI"
+    xmlns:ui="using:CommunityToolkit.WinUI.UI"
+    xmlns:media="using:CommunityToolkit.WinUI.UI.Media"
     mc:Ignorable="d">
-    <StackPanel x:Name="MainPage"
-                Spacing="16"
-                d:DataContext="{d:DesignInstance viewModels:MainViewModel}"
-                Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <StackPanel.Resources>
+    <Grid x:Name="MainPage"
+          d:DataContext="{d:DesignInstance viewModels:MainViewModel}"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          RowDefinitions="Auto,*">
+        <Grid.Resources>
+            <media:AttachedCardShadow x:Key="FrameShadow" Offset="2" BlurRadius="6" Opacity="0.35"/>
+
             <Style x:Key="MyOutlinedTextBlockStyle" TargetType="local:OutlinedTextBlock">
                 <Setter Property="FontFamily" Value="Cooper" />
                 <Setter Property="FontSize" Value="36" />
@@ -20,21 +24,72 @@
                 <Setter Property="OutlineThickness" Value="7" />
             </Style>
             <Style TargetType="local:OutlinedTextBlock" BasedOn="{StaticResource MyOutlinedTextBlockStyle}"/>
-        </StackPanel.Resources>
-        <StackPanel  Orientation="Horizontal" Spacing="16" Padding="32,32,32,0">
-            <Button Command="{Binding ToggleCommand}" >
-                <TextBlock Text="{Binding ToggleButtonText}" />
-            </Button>
-            <Button Command="{Binding CycleClickedCommand}">
-                <TextBlock Text="Cycle Prompt" />
-            </Button>
-            <Button Command="{Binding PickPromptFileCommand}">
-                <TextBlock Text="Pick Prompt File" />
-            </Button>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Spacing="32" Background="LimeGreen" Padding="32,16">
-            <local:OutlinedTextBlock x:Name="TextBlockPrompt" Text="{Binding PromptText}" HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
+
+            <Style x:Key="StackContentStyle" TargetType="StackPanel">
+                <Setter Property="Spacing" Value="8" />
+                <Setter Property="Padding" Value="16" />
+                <Setter Property="Background" Value="White" />
+            </Style>
+
+            <Style x:Key="FramedStyle" TargetType="Border">
+                <Setter Property="Margin" Value="16,0" />
+                <Setter Property="ui:Effects.Shadow" Value="{StaticResource FrameShadow}" />
+            </Style>
+        </Grid.Resources>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="32" Background="LimeGreen" Padding="32,16">
+            <local:OutlinedTextBlock x:Name="TextBlockPrompt" Text="{Binding PromptText}"
+                                     HorizontalAlignment="Left" HorizontalContentAlignment="Left" />
             <local:OutlinedTextBlock x:Name="TextBlockTime" Text="{Binding TimeText}" />
         </StackPanel>
-    </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="16" Padding="0,0,0,8" Margin="0,16,0,0">
+                <Border Style="{StaticResource FramedStyle}">
+                    <StackPanel Style="{StaticResource StackContentStyle}" BorderBrush="White" BorderThickness="1">
+                        <TextBlock Text="Controls" Typography.Capitals="SmallCaps"/>
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <Button Command="{Binding ToggleCommand}">
+                                <TextBlock Text="{Binding ToggleButtonText}" />
+                            </Button>
+                            <Button Command="{Binding CycleClickedCommand}">
+                                <TextBlock Text="Cycle Prompt" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource FramedStyle}">
+                    <StackPanel Style="{StaticResource StackContentStyle}">
+                        <TextBlock Text="Settings" Typography.Capitals="SmallCaps"/>
+                        <Button Command="{Binding PickPromptFileCommand}">
+                            <TextBlock Text="Pick Prompt File" />
+                        </Button>
+                        <CheckBox>
+                            <TextBlock Text="Allow Repeats" />
+                        </CheckBox>
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <TextBlock Text="Timer length (mins)" VerticalAlignment="Center" />
+                            <TextBox />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource FramedStyle}">
+                    <StackPanel Style="{StaticResource StackContentStyle}">
+                        <TextBlock Text="Remaining Prompts" Typography.Capitals="SmallCaps"/>
+                        <ItemsControl ItemsSource="{Binding PromptList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border>
+                                        <TextBlock Text="{Binding}" Margin="8" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Window>

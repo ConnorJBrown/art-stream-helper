@@ -21,6 +21,8 @@ public sealed partial class MainWindow : Window
         ViewModel.PropertyChanged += ViewModelOnPropertyChanged;
     }
 
+    private MainViewModel ViewModel => (MainViewModel)MainPage.DataContext;
+    
     private void ViewModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -34,8 +36,6 @@ public sealed partial class MainWindow : Window
                 break;
         }
     }
-
-    private MainViewModel ViewModel => (MainViewModel)MainPage.DataContext;
 
     private void UpdatePromptMaxWidth()
     {

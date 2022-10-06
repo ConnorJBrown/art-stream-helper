@@ -96,6 +96,7 @@ public partial class MainViewModel : ObservableObject
             using var streamReader = new StreamReader(stream);
             var text = await streamReader.ReadToEndAsync();
             _promptList = text.Split(Environment.NewLine).ToList();
+            OnPropertyChanged(nameof(PromptList));
         }
     }
 
