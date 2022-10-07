@@ -1,8 +1,12 @@
 ﻿using ArtStreamHelper.Core.Services;
+using ArtStreamHelper.Core.ViewModels.Config;
+using ArtStreamHelper.Core.ViewModels.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,23 +16,29 @@ namespace ArtStreamHelper.Core.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
+    private const int DefaultPromptTimeMinutes = 30;
+    private const int DefaultPromptCooldownSeconds = 10;
+
+    private static readonly TimeSpan PromptCooldown = TimeSpan.FromSeconds(DefaultPromptCooldownSeconds);
+
     private readonly IFileService _fileService;
     private readonly IPlatformServices _platformServices;
-
-    private static readonly TimeSpan PromptCooldown = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan PromptTime = TimeSpan.FromMinutes(30);
 
     private readonly Timer _promptCooldownTimer;
     private readonly Timer _promptDrawingTimer;
     private readonly Random _random;
 
-    private string _lastPrompt;
-    private List<string> _promptList;
+    private string _previousPrompt;
     private int _drawingSecondsRemaining;
     private int _cooldownSecondsRemaining;
-    private bool _started;
+    private bool _allowRepeats;
+    private List<string> _unsavedPromptList;
+    private TimeSpan _promptTime = TimeSpan.FromMinutes(DefaultPromptTimeMinutes);
 
-    public IReadOnlyCollection<string> PromptList => _promptList;
+    [ObservableProperty]
+    private IReadOnlyCollection<string> _originalPromptList;
+    [ObservableProperty]
+    private ObservableCollection<string> _promptList;
 
     public MainViewModel(IFileService fileService, IPlatformServices platformServices)
     {
@@ -63,16 +73,74 @@ public partial class MainViewModel : ObservableObject
                 {
                     _promptDrawingTimer.Stop();
                     CyclePrompt();
-                    StartCooldownTimer();
                 }
             });
         };
 
-        _promptList = new List<string>
+        _originalPromptList = new List<string>
         {
             "Animal", "Clothing Item", "Color", "Adjective", "Object"
         };
+        PromptList = new ObservableCollection<string>(_originalPromptList);
         _random = new Random();
+
+        var btn = new ButtonConfigViewModel
+        {
+            Name = "Pick prompt file",
+            OnSaved = () =>
+            {
+                if (Started)
+                {
+                    Started = false;
+                }
+                _originalPromptList = _unsavedPromptList;
+                PromptList = new ObservableCollection<string>(_originalPromptList);
+                return Task.CompletedTask;
+            }
+        };
+        btn.ClickFunc = async () =>
+        {
+            await PickPromptFileAsync();
+            btn.SetHasChanges();
+        };
+
+        var checkBox = new CheckBoxConfigViewModel(_allowRepeats)
+        {
+            Name = "Allow repeats"
+        };
+        checkBox.OnSaved = () =>
+        {
+            _allowRepeats = checkBox.IsChecked;
+            return Task.CompletedTask;
+        };
+
+        var textBox = new TextBoxConfigViewModel(DefaultPromptTimeMinutes.ToString())
+        {
+            Name = "Prompt time in mins",
+            ValidTextRegex = @"\d+"
+        };
+        textBox.OnSaved = () =>
+        {
+            _promptTime = TimeSpan.FromMinutes(double.Parse(textBox.Text));
+            return Task.CompletedTask;
+        };
+
+        Configs = new List<ConfigViewModelBase>
+        {
+            btn, checkBox, textBox
+        };
+
+        Configs.ForEach(config => config.PropertyChanged += (sender, args) =>
+        {
+            switch (args.PropertyName)
+            {
+                case nameof(ConfigViewModelBase.IsValid):
+                case nameof(ConfigViewModelBase.HasChanges):
+                    SaveSettingsCommand.NotifyCanExecuteChanged();
+                    DiscardSettingsCommand.NotifyCanExecuteChanged();
+                    break;
+            }
+        });
     }
 
     [ObservableProperty]
@@ -80,70 +148,149 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _timeText;
     [ObservableProperty]
-    private string _toggleButtonText = "Start";
+    private List<ConfigViewModelBase> _configs;
+    [ObservableProperty]
+    private bool _started;
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+
+        switch (e.PropertyName)
+        {
+            case nameof(Started):
+                if (Started)
+                {
+                    CyclePrompt();
+                }
+                else
+                {
+                    StopAndClearAll();
+                }
+                CycleClickedCommand.NotifyCanExecuteChanged();
+                break;
+        }
+    }
 
     [RelayCommand]
     private async Task PickPromptFileAsync()
     {
-        if (_started)
-        {
-            Toggle();
-        }
-
         var stream = await _fileService.PickFileAsync(new List<string> { ".txt" });
         if (stream != null)
         {
             using var streamReader = new StreamReader(stream);
             var text = await streamReader.ReadToEndAsync();
-            _promptList = text.Split(Environment.NewLine).ToList();
-            OnPropertyChanged(nameof(PromptList));
+            _unsavedPromptList = text.Split(Environment.NewLine).ToList();
         }
     }
 
     [RelayCommand]
     private void Toggle()
     {
-        _started = !_started;
-        ToggleButtonText = _started ? "Stop" : "Start";
-
-        if (_started)
-        {
-            CyclePrompt();
-            StartCooldownTimer();
-        }
-        else
-        {
-            PromptText = " ";
-            TimeText = " ";
-            _promptDrawingTimer.Stop();
-            _promptCooldownTimer.Stop();
-        }
+        Started = !Started;
     }
 
-    [RelayCommand]
+    private void StopAndClearAll()
+    {
+        PromptList = new ObservableCollection<string>(_originalPromptList);
+        PromptText = " ";
+        TimeText = " ";
+        _promptDrawingTimer.Stop();
+        _promptCooldownTimer.Stop();
+    }
+
+    [RelayCommand(CanExecute = nameof(Started))]
     private void OnCycleClicked()
     {
         _promptDrawingTimer.Stop();
         _promptCooldownTimer.Stop();
         
         CyclePrompt();
-        StartCooldownTimer();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveSettings))]
+    private async Task SaveSettings()
+    {
+        foreach (var config in Configs)
+        {
+            await config.Save();
+        }
+
+        if (Started)
+        {
+            Started = false;
+        }
+
+        DiscardSettingsCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanSaveSettings()
+    {
+        return Configs.Any(config => config.HasChanges && config.IsValid);
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSettingsChanges))]
+    private void DiscardSettings()
+    {
+        foreach (var config in Configs.Where(config => config.HasChanges))
+        {
+            config.DiscardChanges();
+        }
+
+
+        SaveSettingsCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool HasSettingsChanges()
+    {
+        return Configs.Any(config => config.HasChanges);
     }
 
     private void StartCooldownTimer()
     {
         _cooldownSecondsRemaining = (int)PromptCooldown.TotalSeconds;
-        SetSecondsRemaining((int)PromptTime.TotalSeconds);
+        SetSecondsRemaining((int)_promptTime.TotalSeconds);
         _promptCooldownTimer.Start();
     }
 
     private void CyclePrompt()
     {
-        List<string> availablePrompts = _promptList.Where(prompt => prompt != _lastPrompt).ToList();
-        _lastPrompt = availablePrompts[_random.Next(availablePrompts.Count)];
-        PromptText = $"Prompt: {_lastPrompt}";
+        string nextPrompt = null;
+        if (PromptList.Count > 0)
+        {
+            if (_allowRepeats)
+            {
+                if (PromptList.Count == 1)
+                {
+                    nextPrompt = PromptList[0];
+                }
+                else
+                {
+                    var availablePromptsExcludingPrevious = PromptList.Where(prompt => prompt != _previousPrompt).ToList();
+                    nextPrompt = availablePromptsExcludingPrevious[_random.Next(availablePromptsExcludingPrevious.Count)];
+                }
+            }
+            else
+            {
+                nextPrompt = PromptList[_random.Next(PromptList.Count)];
+                PromptList.Remove(nextPrompt);
+            }
+        }
 
-        SetSecondsRemaining((int)PromptTime.TotalSeconds);
+        if (nextPrompt == null)
+        {
+            Started = false;
+            PromptText = "No More Prompts.";
+        }
+        else
+        {
+            PromptText = $"Prompt: {nextPrompt}";
+
+            SetSecondsRemaining((int)_promptTime.TotalSeconds);
+            StartCooldownTimer();
+        }
+
+        _previousPrompt = nextPrompt;
     }
 
     private void SetSecondsRemaining(int totalSeconds)

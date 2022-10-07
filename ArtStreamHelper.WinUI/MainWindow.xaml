@@ -8,6 +8,9 @@
     xmlns:local="using:ArtStreamHelper.WinUI"
     xmlns:ui="using:CommunityToolkit.WinUI.UI"
     xmlns:media="using:CommunityToolkit.WinUI.UI.Media"
+    xmlns:config="using:ArtStreamHelper.WinUI.Views.Config"
+    xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+    xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
     mc:Ignorable="d">
     <Grid x:Name="MainPage"
           d:DataContext="{d:DesignInstance viewModels:MainViewModel}"
@@ -35,6 +38,21 @@
                 <Setter Property="Margin" Value="16,0" />
                 <Setter Property="ui:Effects.Shadow" Value="{StaticResource FrameShadow}" />
             </Style>
+
+            <DataTemplate x:Key="CheckBoxConfigTemplate">
+                <config:CheckBoxConfigView Margin="0,4" />
+            </DataTemplate>
+            <DataTemplate x:Key="ButtonConfigTemplate">
+                <config:ButtonConfigView Margin="0,4" />
+            </DataTemplate>
+            <DataTemplate x:Key="TextBoxConfigTemplate">
+                <config:TextBoxConfigView Margin="0,4" />
+            </DataTemplate>
+
+            <config:ConfigTemplateSelector x:Name="ConfigTemplateSelector"
+                                           CheckBox="{StaticResource CheckBoxConfigTemplate}"
+                                           Button="{StaticResource ButtonConfigTemplate}"
+                                           TextBox="{StaticResource TextBoxConfigTemplate}"/>
         </Grid.Resources>
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="32" Background="LimeGreen" Padding="32,16">
@@ -50,7 +68,16 @@
                         <TextBlock Text="Controls" Typography.Capitals="SmallCaps"/>
                         <StackPanel Orientation="Horizontal" Spacing="16">
                             <Button Command="{Binding ToggleCommand}">
-                                <TextBlock Text="{Binding ToggleButtonText}" />
+                                <TextBlock>
+                                    <interactivity:Interaction.Behaviors>
+                                        <core:DataTriggerBehavior Binding="{Binding Started}" Value="False">
+                                            <core:ChangePropertyAction PropertyName="Text" Value="Start" />
+                                        </core:DataTriggerBehavior>
+                                        <core:DataTriggerBehavior Binding="{Binding Started}" Value="True">
+                                            <core:ChangePropertyAction PropertyName="Text" Value="Stop" />
+                                        </core:DataTriggerBehavior>
+                                    </interactivity:Interaction.Behaviors>
+                                </TextBlock>
                             </Button>
                             <Button Command="{Binding CycleClickedCommand}">
                                 <TextBlock Text="Cycle Prompt" />
@@ -62,15 +89,15 @@
                 <Border Style="{StaticResource FramedStyle}">
                     <StackPanel Style="{StaticResource StackContentStyle}">
                         <TextBlock Text="Settings" Typography.Capitals="SmallCaps"/>
-                        <Button Command="{Binding PickPromptFileCommand}">
-                            <TextBlock Text="Pick Prompt File" />
-                        </Button>
-                        <CheckBox>
-                            <TextBlock Text="Allow Repeats" />
-                        </CheckBox>
-                        <StackPanel Orientation="Horizontal" Spacing="16">
-                            <TextBlock Text="Timer length (mins)" VerticalAlignment="Center" />
-                            <TextBox />
+                        <ItemsControl ItemsSource="{Binding Configs}"
+                                      ItemTemplateSelector="{StaticResource ConfigTemplateSelector}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Command="{Binding SaveSettingsCommand}">
+                                <TextBlock Text="Save" />
+                            </Button>
+                            <Button Command="{Binding DiscardSettingsCommand}">
+                                <TextBlock Text="Discard" />
+                            </Button>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -79,10 +106,17 @@
                     <StackPanel Style="{StaticResource StackContentStyle}">
                         <TextBlock Text="Remaining Prompts" Typography.Capitals="SmallCaps"/>
                         <ItemsControl ItemsSource="{Binding PromptList}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border>
-                                        <TextBlock Text="{Binding}" Margin="8" />
+                                    <Border Width="150" Height="50" Background="#F3F3F3" Margin="8"
+                                            ui:Effects.Shadow="{StaticResource FrameShadow}">
+                                        <TextBlock Text="{Binding}" Margin="8"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

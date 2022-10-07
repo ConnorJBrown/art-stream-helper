@@ -18,6 +18,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         MainPage.DataContext = Ioc.Default.GetRequiredService<MainViewModel>();
+        UpdatePromptMaxWidth();
         ViewModel.PropertyChanged += ViewModelOnPropertyChanged;
     }
 
@@ -27,7 +28,7 @@ public sealed partial class MainWindow : Window
     {
         switch (e.PropertyName)
         {
-            case nameof(MainViewModel.PromptText):
+            case nameof(MainViewModel.OriginalPromptList):
                 UpdatePromptMaxWidth();
                 TextBlockPrompt.InvalidateMeasure();
                 break;
@@ -49,7 +50,7 @@ public sealed partial class MainWindow : Window
 
         if (MainPage.Resources.TryGetValue("MyOutlinedTextBlockStyle", out object value) && value is Style style)
         {
-            foreach (var prompt in ViewModel.PromptList)
+            foreach (var prompt in ViewModel.OriginalPromptList)
             {
                 OutlinedTextBlock text = new OutlinedTextBlock
                 {
@@ -57,7 +58,7 @@ public sealed partial class MainWindow : Window
                     Text = $"Prompt: {prompt}"
                 };
 
-                text.Measure(new Size(4000, 4000));
+                text.Measure(new Size(1000, 1000));
                 if (maxWidth < text.DesiredSize.Width)
                 {
                     maxWidth = text.DesiredSize.Width;

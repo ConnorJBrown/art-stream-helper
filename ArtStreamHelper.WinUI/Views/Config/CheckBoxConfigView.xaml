@@ -1,0 +1,24 @@
+﻿<UserControl
+    x:Class="ArtStreamHelper.WinUI.Views.Config.CheckBoxConfigView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:ArtStreamHelper.Core.ViewModels.Config"
+    xmlns:interactionCore="using:Microsoft.Xaml.Interactions.Core" 
+    xmlns:interaction="using:Microsoft.Xaml.Interactivity"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance vm:CheckBoxConfigViewModel}">
+    <CheckBox IsChecked="{Binding PendingIsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+        <TextBlock Text="{Binding Name}">
+            <interaction:Interaction.Behaviors>
+                <interactionCore:DataTriggerBehavior Binding="{Binding HasChanges}" Value="False">
+                    <interactionCore:ChangePropertyAction PropertyName="FontStyle" Value="Normal" />
+                </interactionCore:DataTriggerBehavior>
+                <interactionCore:DataTriggerBehavior Binding="{Binding HasChanges}" Value="True">
+                    <interactionCore:ChangePropertyAction PropertyName="FontStyle" Value="Oblique" />
+                </interactionCore:DataTriggerBehavior>
+            </interaction:Interaction.Behaviors>
+        </TextBlock>
+    </CheckBox>
+</UserControl>

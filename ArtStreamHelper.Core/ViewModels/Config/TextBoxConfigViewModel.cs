@@ -1,23 +1,26 @@
 ﻿using ArtStreamHelper.Core.ViewModels.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ArtStreamHelper.Core.ViewModels.Config;
 
-public partial class CheckBoxConfigViewModel : ConfigViewModelBase
+public partial class TextBoxConfigViewModel : ConfigViewModelBase
 {
     [ObservableProperty]
-    private bool _pendingIsChecked;
+    private string _pendingText;
 
-    public CheckBoxConfigViewModel(bool isChecked)
+    public TextBoxConfigViewModel(string initialValue)
     {
-        IsChecked = PendingIsChecked = isChecked;
+        Text = PendingText = initialValue;
     }
 
-    public bool IsChecked { get; private set; }
+    public string ValidTextRegex { get; set; }
 
-    public override bool HasChanges => IsChecked != PendingIsChecked;
+    public string Text { get; set; }
+
+    public override bool HasChanges => PendingText != Text;
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -25,19 +28,21 @@ public partial class CheckBoxConfigViewModel : ConfigViewModelBase
 
         switch (e.PropertyName)
         {
-            case nameof(PendingIsChecked):
+            case nameof(PendingText):
+                OnPropertyChanged(nameof(IsValid));
                 OnPropertyChanged(nameof(HasChanges));
                 break;
         }
     }
 
-    public override bool IsValid => true;
+    public override bool IsValid =>
+        string.IsNullOrEmpty(ValidTextRegex) || new Regex(ValidTextRegex).Match(PendingText).Success;
 
     public override async Task Save()
     {
         if (HasChanges && IsValid)
         {
-            IsChecked = PendingIsChecked;
+            Text = PendingText;
             OnPropertyChanged(nameof(HasChanges));
 
             await base.Save();
@@ -46,6 +51,6 @@ public partial class CheckBoxConfigViewModel : ConfigViewModelBase
 
     public override void DiscardChanges()
     {
-        PendingIsChecked = IsChecked;
+        PendingText = Text;
     }
 }
