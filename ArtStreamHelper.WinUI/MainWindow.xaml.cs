@@ -29,6 +29,7 @@ public sealed partial class MainWindow : Window
         switch (e.PropertyName)
         {
             case nameof(MainViewModel.OriginalPromptList):
+            case nameof(MainViewModel.PromptPrefix):
                 UpdatePromptMaxWidth();
                 TextBlockPrompt.InvalidateMeasure();
                 break;
@@ -55,7 +56,7 @@ public sealed partial class MainWindow : Window
                 OutlinedTextBlock text = new OutlinedTextBlock
                 {
                     Style = style,
-                    Text = $"Prompt: {prompt}"
+                    Text = $"{ViewModel.PromptPrefix}: {prompt}"
                 };
 
                 text.Measure(new Size(1000, 1000));

@@ -35,10 +35,13 @@ public partial class MainViewModel : ObservableObject
     private List<string> _unsavedPromptList;
     private TimeSpan _promptTime = TimeSpan.FromMinutes(DefaultPromptTimeMinutes);
 
-    [ObservableProperty]
-    private IReadOnlyCollection<string> _originalPromptList;
-    [ObservableProperty]
-    private ObservableCollection<string> _promptList;
+    [ObservableProperty] private string _promptPrefix = string.Empty;
+    [ObservableProperty] private IReadOnlyCollection<string> _originalPromptList;
+    [ObservableProperty] private ObservableCollection<string> _promptList;
+    [ObservableProperty] private string _promptText;
+    [ObservableProperty] private string _timeText;
+    [ObservableProperty] private List<ConfigViewModelBase> _configs;
+    [ObservableProperty] private bool _started;
 
     public MainViewModel(IFileService fileService, IPlatformServices platformServices)
     {
@@ -84,7 +87,12 @@ public partial class MainViewModel : ObservableObject
         PromptList = new ObservableCollection<string>(_originalPromptList);
         _random = new Random();
 
-        var btn = new ButtonConfigViewModel
+        SetUpSettings();
+    }
+    
+    private void SetUpSettings()
+    {
+        var pickPromptsBtn = new ButtonConfigViewModel
         {
             Name = "Pick prompt file",
             OnSaved = () =>
@@ -98,36 +106,49 @@ public partial class MainViewModel : ObservableObject
                 return Task.CompletedTask;
             }
         };
-        btn.ClickFunc = async () =>
+        pickPromptsBtn.ClickFunc = async () =>
         {
             await PickPromptFileAsync();
-            btn.SetHasChanges();
+            if (_originalPromptList != _unsavedPromptList)
+            {
+                pickPromptsBtn.SetHasChanges();
+            }
         };
 
-        var checkBox = new CheckBoxConfigViewModel(_allowRepeats)
+        var allowRepeatsToggle = new CheckBoxConfigViewModel(_allowRepeats)
         {
             Name = "Allow repeats"
         };
-        checkBox.OnSaved = () =>
+        allowRepeatsToggle.OnSaved = () =>
         {
-            _allowRepeats = checkBox.IsChecked;
+            _allowRepeats = allowRepeatsToggle.IsChecked;
             return Task.CompletedTask;
         };
 
-        var textBox = new TextBoxConfigViewModel(DefaultPromptTimeMinutes.ToString())
+        var minutesText = new TextBoxConfigViewModel(DefaultPromptTimeMinutes.ToString())
         {
             Name = "Prompt time in mins",
             ValidTextRegex = @"\d+"
         };
-        textBox.OnSaved = () =>
+        minutesText.OnSaved = () =>
         {
-            _promptTime = TimeSpan.FromMinutes(double.Parse(textBox.Text));
+            _promptTime = TimeSpan.FromMinutes(double.Parse(minutesText.Text));
+            return Task.CompletedTask;
+        };
+
+        var promptPrefix = new TextBoxConfigViewModel(PromptPrefix)
+        {
+            Name = "Prompt prefix"
+        };
+        promptPrefix.OnSaved = () =>
+        {
+            PromptPrefix = promptPrefix.Text;
             return Task.CompletedTask;
         };
 
         Configs = new List<ConfigViewModelBase>
         {
-            btn, checkBox, textBox
+            pickPromptsBtn, allowRepeatsToggle, minutesText, promptPrefix
         };
 
         Configs.ForEach(config => config.PropertyChanged += (sender, args) =>
@@ -142,15 +163,6 @@ public partial class MainViewModel : ObservableObject
             }
         });
     }
-
-    [ObservableProperty]
-    private string _promptText;
-    [ObservableProperty]
-    private string _timeText;
-    [ObservableProperty]
-    private List<ConfigViewModelBase> _configs;
-    [ObservableProperty]
-    private bool _started;
 
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
@@ -280,11 +292,11 @@ public partial class MainViewModel : ObservableObject
         if (nextPrompt == null)
         {
             Started = false;
-            PromptText = "No More Prompts.";
+            PromptText = "No More.";
         }
         else
         {
-            PromptText = $"Prompt: {nextPrompt}";
+            PromptText = string.IsNullOrEmpty(PromptPrefix) ? nextPrompt : $"{PromptPrefix}: {nextPrompt}";
 
             SetSecondsRemaining((int)_promptTime.TotalSeconds);
             StartCooldownTimer();
