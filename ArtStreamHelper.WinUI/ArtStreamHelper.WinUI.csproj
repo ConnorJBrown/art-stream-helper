@@ -11,9 +11,6 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-    <PackageCertificateThumbprint>B3C81878256C4CFD3672EEF340417511DAA4F75C</PackageCertificateThumbprint>
-    <PackageCertificateKeyFile>ArtStreamHelper.WinUI_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\Images\AppIcon.scale-200.png" />
