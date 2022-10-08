@@ -13,8 +13,8 @@
 
   <Properties>
     <DisplayName>ArtStreamHelper.WinUI</DisplayName>
-    <PublisherDisplayName>Connor</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
+    <PublisherDisplayName>Connor J Brown</PublisherDisplayName>
+    <Logo>Assets\Images\PackageLogo.png</Logo>
   </Properties>
 
   <Dependencies>
@@ -31,13 +31,12 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="ArtStreamHelper.WinUI"
-        Description="ArtStreamHelper.WinUI"
+        DisplayName="Art Stream Helper"
         BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+        Description="Customized timed prompt generator." Square150x150Logo="Assets\Images\MediumTile.png" Square44x44Logo="Assets\Images\AppIcon.png">
+        <uap:DefaultTile  Square71x71Logo="Assets\Images\SmallTile.png" Wide310x150Logo="Assets\Images\WideTile.png" Square310x310Logo="Assets\Images\LargeTile.png">
+        </uap:DefaultTile >
+        <uap:SplashScreen Image="Assets\Images\SplashScreen.png"/>
       </uap:VisualElements>
     </Application>
   </Applications>

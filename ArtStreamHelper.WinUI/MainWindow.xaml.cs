@@ -1,8 +1,14 @@
 ﻿using ArtStreamHelper.Core.ViewModels;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using System;
 using System.ComponentModel;
+using System.IO;
 using Windows.Foundation;
+using Microsoft.UI.Windowing;
+using WinRT.Interop;
+using Windows.ApplicationModel;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,6 +23,9 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Title = "Art Stream Helper";
+        var window = GetAppWindowForCurrentWindow();
+        window.SetIcon(Path.Combine(Package.Current.InstalledLocation.Path, "Assets/logo.ico"));
         MainPage.DataContext = Ioc.Default.GetRequiredService<MainViewModel>();
         UpdatePromptMaxWidth();
         ViewModel.PropertyChanged += ViewModelOnPropertyChanged;
@@ -24,6 +33,12 @@ public sealed partial class MainWindow : Window
 
     private MainViewModel ViewModel => (MainViewModel)MainPage.DataContext;
     
+    private AppWindow GetAppWindowForCurrentWindow()
+    {
+        IntPtr hWnd = WindowNative.GetWindowHandle(this);
+        WindowId wndId = Win32Interop.GetWindowIdFromWindow(hWnd);
+        return AppWindow.GetFromWindowId(wndId);
+    }
     private void ViewModelOnPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
