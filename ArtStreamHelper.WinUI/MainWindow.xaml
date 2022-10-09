@@ -11,6 +11,7 @@
     xmlns:config="using:ArtStreamHelper.WinUI.Views.Config"
     xmlns:core="using:Microsoft.Xaml.Interactions.Core"
     xmlns:interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:views="using:ArtStreamHelper.WinUI.Views"
     mc:Ignorable="d">
     <Grid x:Name="MainPage"
           d:DataContext="{d:DesignInstance viewModels:MainViewModel}"
@@ -92,7 +93,15 @@
                         <ItemsControl ItemsSource="{Binding Configs}"
                                       ItemTemplateSelector="{StaticResource ConfigTemplateSelector}"/>
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Command="{Binding SaveSettingsCommand}">
+                            <Button x:Name="SaveButton" Command="{Binding SaveSettingsCommand}">
+                                <interactivity:Interaction.Behaviors>
+                                    <core:DataTriggerBehavior Binding="{x:Bind SaveButton.IsEnabled}" Value="False">
+                                        <core:ChangePropertyAction PropertyName="Background" Value="White" />
+                                    </core:DataTriggerBehavior>
+                                    <core:DataTriggerBehavior Binding="{x:Bind SaveButton.IsEnabled}" Value="True">
+                                        <core:ChangePropertyAction PropertyName="Background" Value="#03DAC6" />
+                                    </core:DataTriggerBehavior>
+                                </interactivity:Interaction.Behaviors>
                                 <TextBlock Text="Save" />
                             </Button>
                             <Button Command="{Binding DiscardSettingsCommand}">
@@ -113,11 +122,8 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="150" Height="50" Background="#F3F3F3" Margin="8"
-                                            ui:Effects.Shadow="{StaticResource FrameShadow}">
-                                        <TextBlock Text="{Binding}" Margin="8"
-                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                                    </Border>
+                                    <views:RemainingPromptView ui:Effects.Shadow="{StaticResource FrameShadow}"
+                                                               Margin="8" Width="150" Height="50"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

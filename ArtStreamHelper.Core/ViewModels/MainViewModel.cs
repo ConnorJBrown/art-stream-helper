@@ -1,4 +1,5 @@
-﻿using ArtStreamHelper.Core.Services;
+﻿using ArtStreamHelper.Core.Models;
+using ArtStreamHelper.Core.Services;
 using ArtStreamHelper.Core.ViewModels.Config;
 using ArtStreamHelper.Core.ViewModels.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,7 +17,7 @@ namespace ArtStreamHelper.Core.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    private const int DefaultPromptTimeMinutes = 30;
+    private const int DefaultPromptTimeMinutes = 10;
     private const int DefaultPromptCooldownSeconds = 10;
 
     private static readonly TimeSpan PromptCooldown = TimeSpan.FromSeconds(DefaultPromptCooldownSeconds);
@@ -37,7 +38,7 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private string _promptPrefix = string.Empty;
     [ObservableProperty] private IReadOnlyCollection<string> _originalPromptList;
-    [ObservableProperty] private ObservableCollection<string> _promptList;
+    [ObservableProperty] private ObservableCollection<RemainingPromptModel> _promptList;
     [ObservableProperty] private string _promptText;
     [ObservableProperty] private string _timeText;
     [ObservableProperty] private List<ConfigViewModelBase> _configs;
@@ -84,7 +85,7 @@ public partial class MainViewModel : ObservableObject
         {
             "Animal", "Clothing Item", "Color", "Adjective", "Object"
         };
-        PromptList = new ObservableCollection<string>(_originalPromptList);
+        ResetPromptList();
         _random = new Random();
 
         SetUpSettings();
@@ -102,7 +103,7 @@ public partial class MainViewModel : ObservableObject
                     Started = false;
                 }
                 _originalPromptList = _unsavedPromptList;
-                PromptList = new ObservableCollection<string>(_originalPromptList);
+                ResetPromptList();
                 return Task.CompletedTask;
             }
         };
@@ -192,7 +193,7 @@ public partial class MainViewModel : ObservableObject
         {
             using var streamReader = new StreamReader(stream);
             var text = await streamReader.ReadToEndAsync();
-            _unsavedPromptList = text.Split(Environment.NewLine).ToList();
+            _unsavedPromptList = text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         }
     }
 
@@ -204,11 +205,40 @@ public partial class MainViewModel : ObservableObject
 
     private void StopAndClearAll()
     {
-        PromptList = new ObservableCollection<string>(_originalPromptList);
+        ResetPromptList();
         PromptText = " ";
         TimeText = " ";
         _promptDrawingTimer.Stop();
         _promptCooldownTimer.Stop();
+    }
+
+    private Task DeletePrompt(RemainingPromptModel selectedPrompt)
+    {
+        PromptList.Remove(selectedPrompt);
+        return Task.CompletedTask;
+    }
+
+    private Task SetPromptAsNext(RemainingPromptModel selectedPrompt)
+    {
+        foreach (var prompt in PromptList)
+        {
+            if (prompt != selectedPrompt)
+            {
+                prompt.IsNextRequested = false;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void ResetPromptList()
+    {
+        PromptList = new ObservableCollection<RemainingPromptModel>(_originalPromptList.Select(p => new RemainingPromptModel
+        {
+            Name = p,
+            DeleteFunc = DeletePrompt,
+            SetAsNextFunc = SetPromptAsNext
+        }));
     }
 
     [RelayCommand(CanExecute = nameof(Started))]
@@ -270,22 +300,33 @@ public partial class MainViewModel : ObservableObject
         string nextPrompt = null;
         if (PromptList.Count > 0)
         {
-            if (_allowRepeats)
+            var nextPromptModel = PromptList.FirstOrDefault(p => p.IsNextRequested);
+            if (nextPromptModel != null)
+            {
+                nextPrompt = nextPromptModel.Name;
+                nextPromptModel.IsNextRequested = false;
+                if (!_allowRepeats)
+                {
+                    PromptList.Remove(nextPromptModel);
+                }
+            }
+            else if (_allowRepeats)
             {
                 if (PromptList.Count == 1)
                 {
-                    nextPrompt = PromptList[0];
+                    nextPrompt = PromptList[0].Name;
                 }
                 else
                 {
-                    var availablePromptsExcludingPrevious = PromptList.Where(prompt => prompt != _previousPrompt).ToList();
-                    nextPrompt = availablePromptsExcludingPrevious[_random.Next(availablePromptsExcludingPrevious.Count)];
+                    var availablePromptsExcludingPrevious = PromptList.Where(prompt => prompt.Name != _previousPrompt).ToList();
+                    nextPrompt = availablePromptsExcludingPrevious[_random.Next(availablePromptsExcludingPrevious.Count)].Name;
                 }
             }
             else
             {
-                nextPrompt = PromptList[_random.Next(PromptList.Count)];
-                PromptList.Remove(nextPrompt);
+                nextPromptModel = PromptList[_random.Next(PromptList.Count)];
+                nextPrompt = nextPromptModel.Name;
+                PromptList.Remove(nextPromptModel);
             }
         }
 

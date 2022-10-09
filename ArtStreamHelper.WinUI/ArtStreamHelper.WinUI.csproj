@@ -53,15 +53,17 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Views\Config\TextBoxConfigView.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
-      <SubType>Designer</SubType>
-    </Page>
+  <Page Update="Views\Config\TextBoxConfigView.xaml">
+	<XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+  </Page>
     <Page Update="Views\Config\ButtonConfigView.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+	  <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
     <Page Update="Views\Settings\CheckBoxSettingView.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+	  <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
+    </Page>
+    <Page Update="Views\RemainingPromptView.xaml">
+	  <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
   </ItemGroup>
 
