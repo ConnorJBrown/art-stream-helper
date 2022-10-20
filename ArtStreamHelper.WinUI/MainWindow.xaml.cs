@@ -74,7 +74,7 @@ public sealed partial class MainWindow : Window
                     Text = $"{ViewModel.PromptPrefix}: {prompt}"
                 };
 
-                text.Measure(new Size(1000, 1000));
+                text.Measure(new Size(4000, 4000));
                 if (maxWidth < text.DesiredSize.Width)
                 {
                     maxWidth = text.DesiredSize.Width;

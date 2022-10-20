@@ -81,7 +81,7 @@ public partial class MainViewModel : ObservableObject
             });
         };
 
-        _originalPromptList = new List<string>
+        OriginalPromptList = new List<string>
         {
             "Animal", "Clothing Item", "Color", "Adjective", "Object"
         };
@@ -102,7 +102,7 @@ public partial class MainViewModel : ObservableObject
                 {
                     Started = false;
                 }
-                _originalPromptList = _unsavedPromptList;
+                OriginalPromptList = _unsavedPromptList;
                 ResetPromptList();
                 return Task.CompletedTask;
             }
@@ -110,7 +110,7 @@ public partial class MainViewModel : ObservableObject
         pickPromptsBtn.ClickFunc = async () =>
         {
             await PickPromptFileAsync();
-            if (_originalPromptList != _unsavedPromptList)
+            if (OriginalPromptList != _unsavedPromptList)
             {
                 pickPromptsBtn.SetHasChanges();
             }
@@ -233,7 +233,7 @@ public partial class MainViewModel : ObservableObject
 
     private void ResetPromptList()
     {
-        PromptList = new ObservableCollection<RemainingPromptModel>(_originalPromptList.Select(p => new RemainingPromptModel
+        PromptList = new ObservableCollection<RemainingPromptModel>(OriginalPromptList.Select(p => new RemainingPromptModel
         {
             Name = p,
             DeleteFunc = DeletePrompt,
