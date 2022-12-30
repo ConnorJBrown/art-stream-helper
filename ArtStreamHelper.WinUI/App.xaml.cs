@@ -32,9 +32,6 @@ namespace ArtStreamHelper.WinUI
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            var thing = DispatcherQueue.GetForCurrentThread();
-
-
             var serviceCollection = new ServiceCollection()
                 .AddSingleton<IFileService, FileService>()
                 .AddSingleton<IPlatformServices, PlatformServices>()
