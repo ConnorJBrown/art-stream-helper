@@ -33,6 +33,7 @@ public partial class MainViewModel : ObservableObject
     private int _drawingSecondsRemaining;
     private int _cooldownSecondsRemaining;
     private bool _allowRepeats;
+    private bool _doNotRandomize;
     private List<string> _unsavedPromptList;
     private TimeSpan _promptTime = TimeSpan.FromMinutes(DefaultPromptTimeMinutes);
 
@@ -147,9 +148,20 @@ public partial class MainViewModel : ObservableObject
             return Task.CompletedTask;
         };
 
+        var doNotRandomize = new CheckBoxConfigViewModel(_allowRepeats)
+        {
+            Name = "Do not randomize"
+        };
+        doNotRandomize.OnSaved = () =>
+        {
+            _doNotRandomize = doNotRandomize.IsChecked;
+            return Task.CompletedTask;
+        };
+
+
         Configs = new List<ConfigViewModelBase>
         {
-            pickPromptsBtn, allowRepeatsToggle, minutesText, promptPrefix
+            pickPromptsBtn, allowRepeatsToggle, doNotRandomize, minutesText, promptPrefix
         };
 
         Configs.ForEach(config => config.PropertyChanged += (sender, args) =>
@@ -318,15 +330,42 @@ public partial class MainViewModel : ObservableObject
                 }
                 else
                 {
-                    var availablePromptsExcludingPrevious = PromptList.Where(prompt => prompt.Name != _previousPrompt).ToList();
-                    nextPrompt = availablePromptsExcludingPrevious[_random.Next(availablePromptsExcludingPrevious.Count)].Name;
+                    if (_doNotRandomize)
+                    {
+                        var nextIndex = PromptList.ToList().FindIndex(item => item.Name == _previousPrompt) + 1;
+                        if (nextIndex >= PromptList.Count)
+                        {
+                            nextIndex = 0;
+                        }
+                        
+                        nextPrompt = PromptList[nextIndex].Name;
+                    }
+                    else
+                    {
+                        var availablePromptsExcludingPrevious = PromptList.Where(prompt => prompt.Name != _previousPrompt).ToList();
+                        var nextIndex = _random.Next(availablePromptsExcludingPrevious.Count);
+                        nextPrompt = availablePromptsExcludingPrevious[nextIndex].Name;
+                    }
                 }
             }
             else
             {
-                nextPromptModel = PromptList[_random.Next(PromptList.Count)];
-                nextPrompt = nextPromptModel.Name;
-                PromptList.Remove(nextPromptModel);
+                if (_doNotRandomize)
+                {
+                    var nextIndex = PromptList.ToList().FindIndex(item => item.Name == _previousPrompt) + 1;
+                    if (nextIndex >= PromptList.Count)
+                    {
+                        nextIndex = 0;
+                    }
+
+                    nextPrompt = PromptList[nextIndex].Name;
+                }
+                else
+                {
+                    nextPromptModel = PromptList[_random.Next(PromptList.Count)];
+                    nextPrompt = nextPromptModel.Name;
+                    PromptList.Remove(nextPromptModel);
+                }
             }
         }
 
